@@ -55,8 +55,11 @@ void BigBuf_print_status(void);
 uint32_t BigBuf_get_traceLen(void);
 void clear_trace(void);
 void set_tracing(bool enable);
+bool set_tracing_blocked(bool blocked); // Returns the previous block state.
 void set_tracelen(uint32_t value);
 bool get_tracing(void);
+
+void trace_restart_timeline(void);
 
 bool RAMFUNC LogTrace(const uint8_t *btBytes, uint16_t iLen, uint32_t timestamp_start, uint32_t timestamp_end, const uint8_t *parity, bool reader2tag);
 bool RAMFUNC LogTraceBits(const uint8_t *btBytes, uint16_t bitLen, uint32_t timestamp_start, uint32_t timestamp_end, bool reader2tag);

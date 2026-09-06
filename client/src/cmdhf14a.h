@@ -32,6 +32,8 @@ typedef struct {
 typedef struct {
     const char *aid;
     const uint8_t aid_length;
+    const char *select_response_match;
+    const uint8_t select_response_match_length;
     const char *desc;
     const char *hint;
 } hintAIDList_t;
@@ -63,6 +65,11 @@ typedef enum {
     MTDUOX = 4096,
     MTNTAG = 8192,
 } nxp_mifare_type_t;
+
+void SendIso14aReaderEx(uint32_t flags, const uint8_t *data, uint16_t datalen, uint16_t len,
+                        uint16_t lenbits, uint32_t timeout, uint32_t wait_us);
+void SendIso14aReader(uint32_t flags, const uint8_t *data, uint16_t len);
+bool WaitForIso14aReply(PacketResponseNG *resp, uint32_t timeout_ms, uint16_t *len, uint8_t *sel);
 
 int CmdHF14A(const char *Cmd);
 int CmdHF14ASniff(const char *Cmd);         // used by hf topaz sniff

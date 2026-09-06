@@ -182,7 +182,8 @@ static int pm3_sign_write(uint8_t *signature, uint8_t slen) {
 
     clearCommandBuffer();
     PacketResponseNG resp;
-    SendCommandNG(CMD_FLASHMEM_WRITE, (uint8_t *)&payload, sizeof(payload));
+    uint32_t plen = (sizeof(payload) - sizeof(payload.data)) + payload.len;   // header + valid data, not the padded struct
+    SendCommandNG(CMD_FLASHMEM_WRITE, (uint8_t *)&payload, plen);
 
     if (WaitForResponseTimeout(CMD_FLASHMEM_WRITE, &resp, 2000) == false) {
         PrintAndLogEx(WARNING, "timeout while waiting for reply");
@@ -373,6 +374,10 @@ static int CmdFlashMemLoad(const char *Cmd) {
     uint32_t keycount = 0;
     uint8_t keylen = 0;
     uint8_t *data = calloc(FLASH_MEM_MAX_SIZE_P(spi_flash_pages), sizeof(uint8_t));
+    if (data == NULL) {
+        PrintAndLogEx(WARNING, "Failed to allocate memory");
+        return PM3_EMALLOC;
+    }
 
     char spiffsDest[32] = {0};
 
@@ -512,7 +517,8 @@ static int CmdFlashMemLoad(const char *Cmd) {
                 .len = bytes_in_packet,
             };
             memcpy(payload.data,  data + bytes_sent, bytes_in_packet);
-            SendCommandNG(CMD_FLASHMEM_WRITE, (uint8_t *)&payload, sizeof(payload));
+            uint32_t plen = (sizeof(payload) - sizeof(payload.data)) + payload.len;
+            SendCommandNG(CMD_FLASHMEM_WRITE, (uint8_t *)&payload, plen);
 
             bytes_remaining -= bytes_in_packet;
             bytes_sent += bytes_in_packet;
@@ -566,6 +572,7 @@ static int CmdFlashMemDump(const char *Cmd) {
     int res = pm3_get_flash_pages64k(&spi_flash_pages);
     if (res != PM3_SUCCESS) {
         PrintAndLogEx(ERR, "failed to get flash pages count (%x)", res);
+        CLIParserFree(ctx);
         return res;
     }
 
@@ -640,7 +647,11 @@ static int CmdFlashMemWipe(const char *Cmd) {
     }
 
     clearCommandBuffer();
-    SendCommandMIX(CMD_FLASHMEM_WIPE, page, initialwipe, 0, NULL, 0);
+    flashmem_wipe_t payload = {
+        .page = page,
+        .initialwipe = initialwipe,
+    };
+    SendCommandNG(CMD_FLASHMEM_WIPE, (uint8_t *)&payload, sizeof(payload));
     PacketResponseNG resp;
     if (WaitForResponseTimeout(CMD_FLASHMEM_WIPE, &resp, 10000) == false) {
         PrintAndLogEx(WARNING, "timeout while waiting for reply");
